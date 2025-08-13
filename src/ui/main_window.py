@@ -10,8 +10,7 @@ class MainWindow(tk.Tk):
         super().__init__()
         self.title("Perfect World Automation")
         self.geometry("450x400")
-        self.resizable(False, False)
-
+        
         self.find_windows_callback = find_windows_callback
         self.focus_callback = focus_callback
         self.set_global_cycle_hotkey_callback = set_global_cycle_hotkey
@@ -21,47 +20,54 @@ class MainWindow(tk.Tk):
         self.active_listener = None
         self.listening_for = None # "cycle", "toggle", or hwnd for individual
 
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(0, weight=1)
+
         self.main_frame = ttk.Frame(self, padding="10")
-        self.main_frame.pack(fill=tk.BOTH, expand=True)
+        self.main_frame.grid(row=0, column=0, sticky="nsew")
+
+        self.main_frame.columnconfigure(0, weight=1)
 
         self.update_button = ttk.Button(self.main_frame, text="Atualizar Janelas", command=self.update_window_list)
-        self.update_button.pack(pady=10)
+        self.update_button.grid(row=0, column=0, pady=10)
 
-        # Seção para o atalho de alternância entre todas as janelas (ciclo)
         cycle_hotkey_frame = ttk.Frame(self.main_frame)
-        cycle_hotkey_frame.pack(pady=5, fill='x')
+        cycle_hotkey_frame.grid(row=1, column=0, pady=5, sticky="ew")
+        cycle_hotkey_frame.columnconfigure(1, weight=1)
 
         self.cycle_hotkey_label = ttk.Label(cycle_hotkey_frame, text="Atalho para Ciclo:")
-        self.cycle_hotkey_label.pack(side="left", padx=5)
+        self.cycle_hotkey_label.grid(row=0, column=0, padx=5, sticky="w")
 
         self.cycle_hotkey_button = ttk.Button(cycle_hotkey_frame, text="Definir Atalho", command=lambda: self.set_global_hotkey_mode("cycle"))
-        self.cycle_hotkey_button.pack(side="left", padx=5)
+        self.cycle_hotkey_button.grid(row=0, column=2, padx=5, sticky="e")
 
         self.cycle_hotkey_status_label = ttk.Label(cycle_hotkey_frame, text="Nenhum atalho", foreground="red")
-        self.cycle_hotkey_status_label.pack(side="left", padx=5)
+        self.cycle_hotkey_status_label.grid(row=0, column=1, padx=5, sticky="w")
         
-        # Seção para o atalho de alternância entre as duas últimas janelas (toggle)
         toggle_hotkey_frame = ttk.Frame(self.main_frame)
-        toggle_hotkey_frame.pack(pady=5, fill='x')
+        toggle_hotkey_frame.grid(row=2, column=0, pady=5, sticky="ew")
+        toggle_hotkey_frame.columnconfigure(1, weight=1)
         
         self.toggle_hotkey_label = ttk.Label(toggle_hotkey_frame, text="Atalho para Alternar:")
-        self.toggle_hotkey_label.pack(side="left", padx=5)
+        self.toggle_hotkey_label.grid(row=0, column=0, padx=5, sticky="w")
         
         self.toggle_hotkey_button = ttk.Button(toggle_hotkey_frame, text="Definir Atalho", command=lambda: self.set_global_hotkey_mode("toggle"))
-        self.toggle_hotkey_button.pack(side="left", padx=5)
+        self.toggle_hotkey_button.grid(row=0, column=2, padx=5, sticky="e")
         
         self.toggle_hotkey_status_label = ttk.Label(toggle_hotkey_frame, text="Nenhum atalho", foreground="red")
-        self.toggle_hotkey_status_label.pack(side="left", padx=5)
+        self.toggle_hotkey_status_label.grid(row=0, column=1, padx=5, sticky="w")
 
-        ttk.Separator(self.main_frame, orient='horizontal').pack(fill='x', pady=5)
+        ttk.Separator(self.main_frame, orient='horizontal').grid(row=3, column=0, sticky="ew", pady=5)
 
+        self.main_frame.rowconfigure(4, weight=1)
         self.scroll_canvas = tk.Canvas(self.main_frame, borderwidth=0, background="#ffffff")
         self.scrollbar = ttk.Scrollbar(self.main_frame, orient="vertical", command=self.scroll_canvas.yview)
+        
+        self.scrollbar.grid(row=4, column=1, sticky="ns")
+        self.scroll_canvas.grid(row=4, column=0, sticky="nsew")
+        
         self.scroll_frame = ttk.Frame(self.scroll_canvas)
-
         self.scroll_canvas.configure(yscrollcommand=self.scrollbar.set)
-        self.scrollbar.pack(side="right", fill="y")
-        self.scroll_canvas.pack(side="left", fill="both", expand=True)
         self.scroll_canvas.create_window((4,4), window=self.scroll_frame, anchor="nw", tags="self.scroll_frame")
 
         self.scroll_frame.bind("<Configure>", self.on_frame_configure)
@@ -114,18 +120,19 @@ class MainWindow(tk.Tk):
     def create_window_widgets(self, title, hwnd):
         window_frame = ttk.Frame(self.scroll_frame, padding="5", relief="solid", borderwidth=1)
         window_frame.pack(fill="x", pady=5)
+        window_frame.columnconfigure(0, weight=1)
 
         title_label = ttk.Label(window_frame, text=title)
-        title_label.pack(side="left", padx=5)
+        title_label.grid(row=0, column=0, padx=5, sticky="w")
 
         hotkey_label = ttk.Label(window_frame, text="Nenhum atalho", foreground="grey")
-        hotkey_label.pack(side="right", padx=5)
+        hotkey_label.grid(row=0, column=1, padx=5, sticky="e")
         
         hotkey_button = ttk.Button(window_frame, text="Definir Atalho", command=lambda: self.set_hotkey_mode_individual(hwnd, hotkey_label, hotkey_button))
-        hotkey_button.pack(side="right", padx=5)
+        hotkey_button.grid(row=0, column=2, padx=5, sticky="e")
         
         focus_button = ttk.Button(window_frame, text="Focar", command=lambda: self.focus_callback(hwnd))
-        focus_button.pack(side="right", padx=5)
+        focus_button.grid(row=0, column=3, padx=5, sticky="e")
         
         self.hotkey_map[hwnd] = {
             "button": hotkey_button,
