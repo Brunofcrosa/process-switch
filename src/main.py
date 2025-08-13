@@ -3,6 +3,8 @@ from src.core.process_handler import ProcessHandler
 from src.core.window_manager import WindowManager
 from src.ui.main_window import MainWindow
 import time
+import psutil
+from src.utils.config import PERFECT_WORLD_PROCESS_NAME
 
 window_manager = WindowManager()
 process_handler = ProcessHandler()
@@ -15,6 +17,7 @@ window_handles_for_cycle = []
 last_window_handles = []
 macro_keys_to_send = []
 focus_on_macro_enabled = False
+background_macro_enabled = False
 
 def find_perfect_world_windows():
     processes = process_handler.find_processes()
@@ -70,24 +73,28 @@ def toggle_last_windows():
     focus_on_window(next_hwnd)
 
 def send_macro_to_windows():
-    global focus_on_macro_enabled, macro_keys_to_send
+    global focus_on_macro_enabled, background_macro_enabled, macro_keys_to_send
     
     windows = find_perfect_world_windows()
     if not windows or not macro_keys_to_send:
         return
-    
-    current_hwnd = window_manager.get_current_foreground_window()
-    
-    for _, hwnd in windows:
-        if focus_on_macro_enabled:
-            window_manager.bring_to_foreground(hwnd)
-            time.sleep(0.1)
-        for key in macro_keys_to_send:
-            keyboard.send(key)
-            time.sleep(0.05)
 
-    if focus_on_macro_enabled and current_hwnd:
-         window_manager.bring_to_foreground(current_hwnd)
+    if background_macro_enabled:
+        for _, hwnd in windows:
+            window_manager.send_keys_with_post_message(hwnd, macro_keys_to_send)
+    else:
+        current_hwnd = window_manager.get_current_foreground_window()
+        for _, hwnd in windows:
+            if focus_on_macro_enabled:
+                window_manager.bring_to_foreground(hwnd)
+                time.sleep(0.1)
+            
+            for key in macro_keys_to_send:
+                keyboard.send(key)
+                time.sleep(0.05)
+
+        if focus_on_macro_enabled and current_hwnd:
+             window_manager.bring_to_foreground(current_hwnd)
 
 def set_global_cycle_hotkey(hotkey_string, handles):
     global global_cycle_hotkey_handle, window_handles_for_cycle
@@ -132,8 +139,12 @@ def set_focus_on_macro(state):
     global focus_on_macro_enabled
     focus_on_macro_enabled = state
 
+def set_background_macro_mode(state):
+    global background_macro_enabled
+    background_macro_enabled = state
+
 def main():
-    root = MainWindow(find_perfect_world_windows, focus_on_window, set_global_cycle_hotkey, set_global_toggle_hotkey, set_global_macro_hotkey, set_macro_keys, set_focus_on_macro)
+    root = MainWindow(find_perfect_world_windows, focus_on_window, set_global_cycle_hotkey, set_global_toggle_hotkey, set_global_macro_hotkey, set_macro_keys, set_focus_on_macro, set_background_macro_mode)
     root.mainloop()
 
 if __name__ == "__main__":

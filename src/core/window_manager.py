@@ -1,7 +1,7 @@
 import win32gui
 import win32con
-import win32process
 import win32api
+import win32process
 import time
 import pywintypes
 import pyautogui
@@ -38,16 +38,46 @@ class WindowManager:
 
     def _force_focus_on_window(self, hwnd):
         try:
-            # Tenta simular um clique na barra de título da janela.
             rect = win32gui.GetWindowRect(hwnd)
-            x = rect[0] + 50  # 50 pixels da borda esquerda
-            y = rect[1] + 15  # 15 pixels do topo (na barra de título)
+            x = rect[0] + 50
+            y = rect[1] + 15
             
             pyautogui.click(x, y)
             print(f"Foco obtido com sucesso através de simulação de clique.")
 
         except Exception as e:
             print(f"Falha total ao focar a janela, mesmo com simulação de clique. Verifique o estado do jogo. Erro: {e}")
+
+    def flash_window(self, hwnd):
+        if not hwnd or not win32gui.IsWindow(hwnd):
+            return
+        
+        win32gui.FlashWindow(hwnd, True)
+
+    def send_keys_with_post_message(self, hwnd, keys):
+        if not hwnd or not win32gui.IsWindow(hwnd):
+            print(f"Erro: HWND inválido ou janela não existe: {hwnd}")
+            return
+
+        print(f"Enviando macro para a janela em segundo plano via PostMessage: {hwnd}")
+
+        vk_map = {
+            'F1': win32con.VK_F1, 'F2': win32con.VK_F2, 'F3': win32con.VK_F3,
+            'F4': win32con.VK_F4, 'F5': win32con.VK_F5, 'F6': win32con.VK_F6,
+            'F7': win32con.VK_F7, 'F8': win32con.VK_F8,
+            'enter': win32con.VK_RETURN
+        }
+        
+        for key in keys:
+            vk_code = vk_map.get(key)
+            if vk_code:
+                # Envia o evento de tecla pressionada
+                win32gui.PostMessage(hwnd, win32con.WM_KEYDOWN, vk_code, 0)
+                time.sleep(0.05)
+                # Envia o evento de tecla solta
+                win32gui.PostMessage(hwnd, win32con.WM_KEYUP, vk_code, 0)
+                time.sleep(0.05)
+        print(f"Macro enviada para {hwnd}")
 
     def _window_enum_handler(self, hwnd, result_list):
         if win32gui.IsWindowVisible(hwnd) and win32gui.GetWindowText(hwnd):
