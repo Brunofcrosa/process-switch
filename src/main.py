@@ -13,6 +13,8 @@ global_macro_hotkey_handle = None
 
 window_handles_for_cycle = []
 last_window_handles = []
+macro_keys_to_send = []
+focus_on_macro_enabled = False
 
 def find_perfect_world_windows():
     processes = process_handler.find_processes()
@@ -67,21 +69,24 @@ def toggle_last_windows():
     next_hwnd = last_window_handles[1]
     focus_on_window(next_hwnd)
 
-def send_macro_to_windows(keys):
+def send_macro_to_windows():
+    global focus_on_macro_enabled, macro_keys_to_send
+    
     windows = find_perfect_world_windows()
-    if not windows:
+    if not windows or not macro_keys_to_send:
         return
     
     current_hwnd = window_manager.get_current_foreground_window()
     
     for _, hwnd in windows:
-        window_manager.bring_to_foreground(hwnd)
-        time.sleep(0.1)
-        for key in keys:
+        if focus_on_macro_enabled:
+            window_manager.bring_to_foreground(hwnd)
+            time.sleep(0.1)
+        for key in macro_keys_to_send:
             keyboard.send(key)
             time.sleep(0.05)
 
-    if current_hwnd:
+    if focus_on_macro_enabled and current_hwnd:
          window_manager.bring_to_foreground(current_hwnd)
 
 def set_global_cycle_hotkey(hotkey_string, handles):
@@ -109,18 +114,26 @@ def set_global_toggle_hotkey(hotkey_string, handles):
         
         global_toggle_hotkey_handle = keyboard.add_hotkey(hotkey_string, toggle_last_windows)
 
-def set_global_macro_hotkey(hotkey_string, keys):
+def set_global_macro_hotkey(hotkey_string):
     global global_macro_hotkey_handle
     
     if global_macro_hotkey_handle:
         keyboard.remove_hotkey(global_macro_hotkey_handle)
         global_macro_hotkey_handle = None
         
-    if hotkey_string and keys:
-        global_macro_hotkey_handle = keyboard.add_hotkey(hotkey_string, lambda: send_macro_to_windows(keys))
+    if hotkey_string and macro_keys_to_send:
+        global_macro_hotkey_handle = keyboard.add_hotkey(hotkey_string, send_macro_to_windows)
+
+def set_macro_keys(keys):
+    global macro_keys_to_send
+    macro_keys_to_send = keys
+
+def set_focus_on_macro(state):
+    global focus_on_macro_enabled
+    focus_on_macro_enabled = state
 
 def main():
-    root = MainWindow(find_perfect_world_windows, focus_on_window, set_global_cycle_hotkey, set_global_toggle_hotkey, set_global_macro_hotkey)
+    root = MainWindow(find_perfect_world_windows, focus_on_window, set_global_cycle_hotkey, set_global_toggle_hotkey, set_global_macro_hotkey, set_macro_keys, set_focus_on_macro)
     root.mainloop()
 
 if __name__ == "__main__":

@@ -6,7 +6,7 @@ import time
 from src.core.window_manager import WindowManager
 
 class MainWindow(tk.Tk):
-    def __init__(self, find_windows_callback, focus_callback, set_global_cycle_hotkey, set_global_toggle_hotkey, set_global_macro_hotkey):
+    def __init__(self, find_windows_callback, focus_callback, set_global_cycle_hotkey, set_global_toggle_hotkey, set_global_macro_hotkey, set_macro_keys_callback, set_focus_on_macro_callback):
         super().__init__()
         self.title("Perfect World Automation")
         self.geometry("450x500")
@@ -16,11 +16,14 @@ class MainWindow(tk.Tk):
         self.set_global_cycle_hotkey_callback = set_global_cycle_hotkey
         self.set_global_toggle_hotkey_callback = set_global_toggle_hotkey
         self.set_global_macro_hotkey_callback = set_global_macro_hotkey
+        self.set_macro_keys_callback = set_macro_keys_callback
+        self.set_focus_on_macro_callback = set_focus_on_macro_callback
         
         self.hotkey_map = {}
         self.active_listener = None
         self.listening_for = None
         self.macro_keys = []
+        self.focus_on_macro_var = tk.BooleanVar(value=True)
 
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
@@ -79,13 +82,17 @@ class MainWindow(tk.Tk):
         self.macro_sequence_label.grid(row=1, column=0, columnspan=2, padx=5, sticky="w")
 
         ttk.Separator(self.main_frame, orient='horizontal').grid(row=4, column=0, sticky="ew", pady=5)
+        
+        self.focus_on_macro_checkbutton = ttk.Checkbutton(self.main_frame, text="Focar nas janelas ao executar o macro", variable=self.focus_on_macro_var, command=lambda: self.set_focus_on_macro_callback(self.focus_on_macro_var.get()))
+        self.focus_on_macro_checkbutton.grid(row=5, column=0, sticky="w", pady=5)
+        self.set_focus_on_macro_callback(self.focus_on_macro_var.get())
 
-        self.main_frame.rowconfigure(5, weight=1)
+        self.main_frame.rowconfigure(6, weight=1)
         self.scroll_canvas = tk.Canvas(self.main_frame, borderwidth=0, background="#ffffff")
         self.scrollbar = ttk.Scrollbar(self.main_frame, orient="vertical", command=self.scroll_canvas.yview)
         
-        self.scrollbar.grid(row=5, column=1, sticky="ns")
-        self.scroll_canvas.grid(row=5, column=0, sticky="nsew")
+        self.scrollbar.grid(row=6, column=1, sticky="ns")
+        self.scroll_canvas.grid(row=6, column=0, sticky="nsew")
         
         self.scroll_frame = ttk.Frame(self.scroll_canvas)
         self.scroll_canvas.configure(yscrollcommand=self.scrollbar.set)
@@ -101,14 +108,13 @@ class MainWindow(tk.Tk):
     def _show_macro_modal(self):
         modal = tk.Toplevel(self)
         modal.title("Definir Sequência de Macro")
-        modal.geometry("300x200")
+        modal.geometry("300x250")
         modal.transient(self)
         modal.grab_set()
         modal.resizable(False, False)
 
         main_frame = ttk.Frame(modal, padding="10")
         main_frame.pack(fill="both", expand=True)
-        main_frame.columnconfigure(0, weight=1)
 
         available_keys = [f"F{i}" for i in range(1, 9)] + ["enter"]
 
@@ -136,6 +142,7 @@ class MainWindow(tk.Tk):
                 self.macro_hotkey_button.config(state=tk.NORMAL)
             else:
                 self.macro_hotkey_button.config(state=tk.DISABLED)
+            self.set_macro_keys_callback(self.macro_keys)
             modal.destroy()
         
         def cancel_macro():
@@ -199,12 +206,13 @@ class MainWindow(tk.Tk):
         self.set_global_toggle_hotkey_callback(hotkey_string=None, handles=[])
         self.toggle_hotkey_status_label.config(text="Nenhum atalho", foreground="red")
 
-        self.set_global_macro_hotkey_callback(hotkey_string=None, keys=None)
+        self.set_global_macro_hotkey_callback(hotkey_string=None)
         self.macro_hotkey_status_label.config(text="Nenhum atalho", foreground="red")
         self.macro_sequence_label.config(text="Sequência: Nenhuma", foreground="gray")
         self.macro_set_button.config(text="Definir Macro")
         self.macro_hotkey_button.config(state=tk.DISABLED)
         self.macro_keys = []
+        self.set_macro_keys_callback(self.macro_keys)
         
         windows = self.find_windows_callback()
 
@@ -279,7 +287,7 @@ class MainWindow(tk.Tk):
                 self.toggle_hotkey_button.config(text="Definir Atalho", state=tk.NORMAL)
             elif self.listening_for == "macro":
                 if self.macro_keys:
-                    self.set_global_macro_hotkey_callback(hotkey_string, self.macro_keys)
+                    self.set_global_macro_hotkey_callback(hotkey_string)
                     self.macro_hotkey_status_label.config(text=f"Ativo: '{hotkey_string}'", foreground="green")
                 else:
                     self.macro_hotkey_status_label.config(text="Macro vazia, atalho não ativado.", foreground="red")
